@@ -10,6 +10,9 @@ RUN npm install
 
 COPY apps/web/ ./apps/web/
 
+ARG NEXT_PUBLIC_API_URL=http://localhost:3001
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 RUN cd apps/web && npm run build
 
 FROM node:20-alpine AS runner
