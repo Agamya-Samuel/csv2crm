@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Zap,
@@ -12,21 +13,27 @@ import {
   XCircle,
   Clock,
   Download,
+  Play,
+  Trash2,
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import ProcessingState from "@/components/ProcessingState";
 import ResultsView from "@/components/ResultsView";
 import { useProcessingPoll, useRecords } from "@/lib/hooks";
-import { getUploadStatus, getExportUrl } from "@/lib/api";
+import { getUploadStatus, getExportUrl, confirmUpload, deleteUpload } from "@/lib/api";
 import { formatTokens } from "@/lib/utils";
 import type { UploadStatus } from "@/types";
 
 export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: uploadId } = use(params);
+  const router = useRouter();
 
   const [initialStatus, setInitialStatus] = useState<UploadStatus | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [initialError, setInitialError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,6 +81,32 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     const url = await getExportUrl(uploadId);
     window.open(url, "_blank");
   }, [uploadId]);
+
+  const handleConfirm = useCallback(async () => {
+    setConfirming(true);
+    try {
+      await confirmUpload(uploadId);
+      const fresh = await getUploadStatus(uploadId);
+      setInitialStatus(fresh);
+    } catch (err) {
+      setInitialError(err instanceof Error ? err.message : "Failed to start processing");
+    } finally {
+      setConfirming(false);
+    }
+  }, [uploadId]);
+
+  const handleDelete = useCallback(async () => {
+    if (!confirm("Delete this job? This will remove all records and cannot be undone.")) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteUpload(uploadId);
+      router.push("/jobs");
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Failed to delete");
+      setDeleting(false);
+    }
+  }, [uploadId, router]);
 
   const statusBadge = (s: string) => {
     const configs: Record<string, { label: string; colors: string; icon: React.ReactNode }> = {
@@ -201,6 +234,21 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 </div>
                 <div className="flex items-center gap-3">
                   {statusBadge(status.status)}
+                  {status.status === "PENDING" && (
+                    <button
+                      onClick={handleConfirm}
+                      disabled={confirming}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium
+                        rounded-lg transition-colors duration-200 flex items-center gap-2 text-sm"
+                    >
+                      {confirming ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Play className="w-4 h-4" />
+                      )}
+                      {confirming ? "Starting..." : "Continue Processing"}
+                    </button>
+                  )}
                   {status.status === "DONE" && (
                     <button
                       onClick={handleExport}
@@ -211,12 +259,25 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                       Export CSV
                     </button>
                   )}
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-medium
+                      rounded-lg transition-colors duration-200 flex items-center gap-2 text-sm"
+                  >
+                    {deleting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                    {deleting ? "Deleting..." : "Delete"}
+                  </button>
                 </div>
               </div>
 
               {status.status !== "PENDING" && status.batchesTotal > 0 && (
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                     <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">Batches</p>
                       <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">
@@ -245,15 +306,28 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                       </p>
                     </div>
                     {(status.totalTokens ?? 0) > 0 && (
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">AI Tokens</p>
-                        <p className="text-lg font-semibold text-purple-600 dark:text-purple-400">
-                          {formatTokens(status.totalTokens)}
-                        </p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">
-                          {(status.promptTokens ?? 0).toLocaleString()} in / {(status.completionTokens ?? 0).toLocaleString()} out
-                        </p>
-                      </div>
+                      <>
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">AI Tokens</p>
+                          <p className="text-lg font-semibold text-purple-600 dark:text-purple-400">
+                            {formatTokens(status.totalTokens)}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">
+                            {(status.promptTokens ?? 0).toLocaleString()} in / {(status.completionTokens ?? 0).toLocaleString()} out
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Est. Cost</p>
+                          <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                            ${(status.estimatedCost ?? 0) < 0.01
+                              ? (status.estimatedCost ?? 0).toFixed(4)
+                              : (status.estimatedCost ?? 0).toFixed(2)}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">
+                            based on provider rates
+                          </p>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
@@ -273,6 +347,39 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 <p className="text-sm text-red-600 dark:text-red-400">
                   {pollError || "An error occurred during processing. Some batches may have failed."}
                 </p>
+              </div>
+            )}
+
+            {status.status === "PENDING" && (
+              <div className="text-center py-12">
+                <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                  Waiting to Process
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  This job has {status.totalRows?.toLocaleString() ?? 0} rows ready.
+                  Click Continue Processing to start AI extraction.
+                </p>
+                <button
+                  onClick={handleConfirm}
+                  disabled={confirming}
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium
+                    rounded-lg transition-colors duration-200 flex items-center gap-2 mx-auto"
+                >
+                  {confirming ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Play className="w-5 h-5" />
+                  )}
+                  {confirming ? "Starting..." : "Continue Processing"}
+                </button>
+              </div>
+            )}
+
+            {deleteError && (
+              <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                <p className="text-sm text-red-600 dark:text-red-400">{deleteError}</p>
               </div>
             )}
 
