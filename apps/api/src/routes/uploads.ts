@@ -70,13 +70,11 @@ router.post("/", upload.single("file"), async (req: Request, res: Response, next
       })),
     });
 
-    const previewRows = rows.slice(0, 50);
-
     res.status(201).json({
       uploadId: uploadRecord.id,
       totalRows: rows.length,
       columns,
-      previewRows,
+      previewRows: rows,
     });
   } catch (err) {
     next(err);
