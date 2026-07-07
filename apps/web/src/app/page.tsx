@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { FileSpreadsheet, ArrowLeft, Zap } from "lucide-react";
+import Link from "next/link";
+import { FileSpreadsheet, ArrowLeft, Zap, List } from "lucide-react";
 import FileUploader from "@/components/FileUploader";
 import CsvPreviewTable from "@/components/CsvPreviewTable";
 import ProcessingState from "@/components/ProcessingState";
@@ -71,7 +72,7 @@ export default function Home() {
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                 <Zap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
@@ -83,8 +84,16 @@ export default function Home() {
                   AI-Powered Lead Importer
                 </p>
               </div>
-            </div>
+            </Link>
             <div className="flex items-center gap-3">
+              <Link
+                href="/jobs"
+                className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400
+                  hover:text-gray-800 dark:hover:text-gray-200 flex items-center gap-1"
+              >
+                <List className="w-4 h-4" />
+                All Jobs
+              </Link>
               {step !== "upload" && (
                 <button
                   onClick={handleReset}
