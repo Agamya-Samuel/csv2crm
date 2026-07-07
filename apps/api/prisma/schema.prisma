@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Upload {
+  id        String       @id @default(uuid())
+  fileName  String
+  totalRows Int
+  status    UploadStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+  records   LeadRecord[]
+  batches   Batch[]
+}
+
+enum UploadStatus {
+  PENDING
+  PARSING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+model Batch {
+  id           String      @id @default(uuid())
+  uploadId     String
+  upload       Upload      @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  batchIndex   Int
+  status       BatchStatus @default(PENDING)
+  retryCount   Int         @default(0)
+  errorMessage String?
+  createdAt    DateTime    @default(now())
+
+  @@index([uploadId])
+}
+
+enum BatchStatus {
+  PENDING
+  IN_PROGRESS
+  SUCCESS
+  FAILED
+}
+
+model LeadRecord {
+  id                       String       @id @default(uuid())
+  uploadId                 String
+  upload                   Upload       @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  rawRow                   Json
+  status                   RecordStatus @default(PENDING)
+  skipReason               String?
+  createdAtField           DateTime?
+  name                     String?
+  email                    String?
+  countryCode              String?
+  mobileWithoutCountryCode String?
+  company                  String?
+  city                     String?
+  state                    String?
+  country                  String?
+  leadOwner                String?
+  crmStatus                CrmStatus?
+  crmNote                  String?
+  dataSource               DataSource?
+  possessionTime           String?
+  description              String?
+
+  @@index([uploadId])
+}
+
+enum RecordStatus {
+  PENDING
+  IMPORTED
+  SKIPPED
+}
+
+enum CrmStatus {
+  GOOD_LEAD_FOLLOW_UP
+  DID_NOT_CONNECT
+  BAD_LEAD
+  SALE_DONE
+}
+
+enum DataSource {
+  leads_on_demand
+  meridian_tower
+  eden_park
+  varah_swamy
+  sarjapur_plots
+}
