@@ -6,6 +6,7 @@ import { aiExtractionQueue } from "../services/queue/bull";
 import { upload } from "../middleware/upload";
 import { NotFoundError, ValidationError } from "../utils/errors";
 import { config } from "../config";
+import { estimateCost } from "../services/ai/pricing";
 import type { BatchJobData } from "../services/queue/processor";
 
 const router = Router();
@@ -16,7 +17,7 @@ router.get("/", async (_req: Request, res: Response, next: NextFunction) => {
       include: {
         batches: true,
         records: { select: { status: true } },
-        aiUsages: { select: { totalTokens: true } },
+        aiUsages: { select: { promptTokens: true, completionTokens: true, totalTokens: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -28,6 +29,10 @@ router.get("/", async (_req: Request, res: Response, next: NextFunction) => {
       const importedCount = u.records.filter((r) => r.status === "IMPORTED").length;
       const skippedCount = u.records.filter((r) => r.status === "SKIPPED").length;
 
+      const promptTokens = u.aiUsages.reduce((sum, a) => sum + a.promptTokens, 0);
+      const completionTokens = u.aiUsages.reduce((sum, a) => sum + a.completionTokens, 0);
+      const totalTokens = u.aiUsages.reduce((sum, a) => sum + a.totalTokens, 0);
+
       return {
         uploadId: u.id,
         fileName: u.fileName,
@@ -38,7 +43,10 @@ router.get("/", async (_req: Request, res: Response, next: NextFunction) => {
         batchesDone,
         importedCount,
         skippedCount,
-        totalTokens: u.aiUsages.reduce((sum, a) => sum + a.totalTokens, 0),
+        totalTokens,
+        promptTokens,
+        completionTokens,
+        estimatedCost: estimateCost(config.AI_PROVIDER, promptTokens, completionTokens),
       };
     });
 
@@ -190,6 +198,7 @@ router.get("/:uploadId", async (req: Request, res: Response, next: NextFunction)
       fileName: uploadRecord.fileName,
       createdAt: uploadRecord.createdAt.toISOString(),
       status: allDone ? "DONE" : uploadRecord.status,
+      totalRows: uploadRecord.totalRows,
       batchesTotal: uploadRecord.batches.length,
       batchesDone,
       importedCount,
@@ -197,6 +206,11 @@ router.get("/:uploadId", async (req: Request, res: Response, next: NextFunction)
       totalTokens: uploadRecord.aiUsages.reduce((sum, a) => sum + a.totalTokens, 0),
       promptTokens: uploadRecord.aiUsages.reduce((sum, a) => sum + a.promptTokens, 0),
       completionTokens: uploadRecord.aiUsages.reduce((sum, a) => sum + a.completionTokens, 0),
+      estimatedCost: estimateCost(
+        config.AI_PROVIDER,
+        uploadRecord.aiUsages.reduce((sum, a) => sum + a.promptTokens, 0),
+        uploadRecord.aiUsages.reduce((sum, a) => sum + a.completionTokens, 0),
+      ),
     });
   } catch (err) {
     next(err);
@@ -220,6 +234,23 @@ router.get("/:uploadId/export", async (req: Request, res: Response, next: NextFu
       `attachment; filename="crm-export-${uploadId}.csv"`
     );
     res.send(csv);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/:uploadId", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const uploadId = req.params.uploadId as string;
+
+    const uploadRecord = await prisma.upload.findUnique({ where: { id: uploadId } });
+    if (!uploadRecord) {
+      throw new NotFoundError("Upload not found");
+    }
+
+    await prisma.upload.delete({ where: { id: uploadId } });
+
+    res.json({ uploadId, message: "Job deleted" });
   } catch (err) {
     next(err);
   }
