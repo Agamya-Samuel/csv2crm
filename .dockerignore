@@ -1,0 +1,13 @@
+node_modules
+apps/*/node_modules
+.git
+.env
+.env.local
+.env.*.local
+*.md
+!README.md
+.next
+dist
+coverage
+.DS_Store
+Thumbs.db
