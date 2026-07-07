@@ -1,4 +1,4 @@
-import type { UploadResult, ConfirmResult, UploadStatus, RecordsResult, UploadsListResult } from "@/types";
+import type { UploadResult, ConfirmResult, UploadStatus, RecordsResult, UploadsListResult, AiCredits } from "@/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -43,4 +43,8 @@ export async function getUploads(): Promise<UploadsListResult> {
 
 export async function getExportUrl(uploadId: string): Promise<string> {
   return `${API_BASE}/api/uploads/${uploadId}/export`;
+}
+
+export async function getAiCredits(): Promise<AiCredits> {
+  return request<AiCredits>("/api/ai-credits");
 }

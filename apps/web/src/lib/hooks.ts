@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { UploadResult, UploadStatus, RecordsResult, UploadsListResult } from "@/types";
+import type { UploadResult, UploadStatus, RecordsResult, UploadsListResult, AiCredits } from "@/types";
 import * as api from "./api";
 
 export function useUpload() {
@@ -136,4 +136,28 @@ export function useUploads() {
   }, [fetchUploads]);
 
   return { data, loading, error, refetch: fetchUploads };
+}
+
+export function useAiCredits(refreshKey?: number) {
+  const [credits, setCredits] = useState<AiCredits | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchCredits = useCallback(async () => {
+    try {
+      const data = await api.getAiCredits();
+      setCredits(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch credits");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCredits();
+  }, [fetchCredits, refreshKey]);
+
+  return { credits, loading, error, refetch: fetchCredits };
 }

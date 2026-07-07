@@ -24,6 +24,9 @@ export interface UploadStatus {
   batchesDone: number;
   importedCount: number;
   skippedCount: number;
+  totalTokens: number;
+  promptTokens: number;
+  completionTokens: number;
 }
 
 export interface UploadSummary {
@@ -36,6 +39,7 @@ export interface UploadSummary {
   batchesDone: number;
   importedCount: number;
   skippedCount: number;
+  totalTokens: number;
 }
 
 export interface UploadsListResult {
@@ -65,4 +69,28 @@ export interface CRMRecord {
 
 export interface RecordsResult {
   records: CRMRecord[];
+}
+
+export interface AiCredits {
+  provider: string;
+  model: string;
+  localUsage: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+    requestCount: number;
+  };
+  liveBalance: {
+    available: boolean;
+    balance?: number;
+    currency?: string;
+    tokenPlan?: {
+      used: number;
+      limit: number;
+      percent: number;
+      planName?: string;
+      periodEnd?: string;
+    };
+    error?: string;
+  };
 }
