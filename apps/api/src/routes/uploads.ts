@@ -10,6 +10,42 @@ import type { BatchJobData } from "../services/queue/processor";
 
 const router = Router();
 
+router.get("/", async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const uploads = await prisma.upload.findMany({
+      include: {
+        batches: true,
+        records: { select: { status: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const result = uploads.map((u) => {
+      const batchesDone = u.batches.filter(
+        (b) => b.status === "SUCCESS" || b.status === "FAILED"
+      ).length;
+      const importedCount = u.records.filter((r) => r.status === "IMPORTED").length;
+      const skippedCount = u.records.filter((r) => r.status === "SKIPPED").length;
+
+      return {
+        uploadId: u.id,
+        fileName: u.fileName,
+        totalRows: u.totalRows,
+        status: u.status,
+        createdAt: u.createdAt.toISOString(),
+        batchesTotal: u.batches.length,
+        batchesDone,
+        importedCount,
+        skippedCount,
+      };
+    });
+
+    res.json({ uploads: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post("/", upload.single("file"), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.file) {
@@ -148,6 +184,8 @@ router.get("/:uploadId", async (req: Request, res: Response, next: NextFunction)
 
     res.json({
       uploadId: uploadRecord.id,
+      fileName: uploadRecord.fileName,
+      createdAt: uploadRecord.createdAt.toISOString(),
       status: allDone ? "DONE" : uploadRecord.status,
       batchesTotal: uploadRecord.batches.length,
       batchesDone,
