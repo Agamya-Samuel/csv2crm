@@ -7,6 +7,7 @@ import ProcessingState from "@/components/ProcessingState";
 import ResultsView from "@/components/ResultsView";
 import Navbar from "@/components/Navbar";
 import SampleFiles from "@/components/SampleFiles";
+import JobCostSummary from "@/components/JobCostSummary";
 import { useUpload, useConfirm, useProcessingPoll, useRecords } from "@/lib/hooks";
 import { getExportUrl } from "@/lib/api";
 import type { UploadResult } from "@/types";
@@ -133,11 +134,21 @@ export default function Home() {
         )}
 
         {step === "results" && uploadData && (
-          <ResultsView
-            records={records?.records || []}
-            uploadId={uploadData.uploadId}
-            onExport={handleExport}
-          />
+          <>
+            {status && (status.totalTokens ?? 0) > 0 && (
+              <JobCostSummary
+                totalTokens={status.totalTokens}
+                promptTokens={status.promptTokens ?? 0}
+                completionTokens={status.completionTokens ?? 0}
+                estimatedCost={status.estimatedCost ?? 0}
+              />
+            )}
+            <ResultsView
+              records={records?.records || []}
+              uploadId={uploadData.uploadId}
+              onExport={handleExport}
+            />
+          </>
         )}
 
         {recordsLoading && (
