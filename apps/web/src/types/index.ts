@@ -20,6 +20,7 @@ export interface UploadStatus {
   fileName: string;
   createdAt: string;
   status: "PENDING" | "PARSING" | "PROCESSING" | "DONE" | "FAILED";
+  totalRows: number;
   batchesTotal: number;
   batchesDone: number;
   importedCount: number;
@@ -27,6 +28,7 @@ export interface UploadStatus {
   totalTokens: number;
   promptTokens: number;
   completionTokens: number;
+  estimatedCost: number;
 }
 
 export interface UploadSummary {
@@ -40,6 +42,9 @@ export interface UploadSummary {
   importedCount: number;
   skippedCount: number;
   totalTokens: number;
+  promptTokens: number;
+  completionTokens: number;
+  estimatedCost: number;
 }
 
 export interface UploadsListResult {
