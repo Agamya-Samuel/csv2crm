@@ -24,6 +24,7 @@ import {
 import ThemeToggle from "@/components/ThemeToggle";
 import { useColumnResize, ResizeHandle } from "@/components/useResizableColumns";
 import { useUploads } from "@/lib/hooks";
+import { formatTokens } from "@/lib/utils";
 import type { UploadSummary } from "@/types";
 
 const statusConfig: Record<
@@ -149,6 +150,20 @@ export default function JobsPage() {
             {info.getValue().toLocaleString()}
           </span>
         ),
+      }),
+      columnHelper.accessor("totalTokens", {
+        header: "Tokens",
+        size: 120,
+        minSize: 80,
+        cell: (info) => {
+          const val = info.getValue();
+          if (!val) return <span className="text-gray-400">—</span>;
+          return (
+            <span className="text-purple-600 dark:text-purple-400 font-medium">
+              {formatTokens(val)}
+            </span>
+          );
+        },
       }),
       columnHelper.accessor("createdAt", {
         header: "Created At",

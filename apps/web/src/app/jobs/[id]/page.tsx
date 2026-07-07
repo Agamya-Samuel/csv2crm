@@ -18,6 +18,7 @@ import ProcessingState from "@/components/ProcessingState";
 import ResultsView from "@/components/ResultsView";
 import { useProcessingPoll, useRecords } from "@/lib/hooks";
 import { getUploadStatus, getExportUrl } from "@/lib/api";
+import { formatTokens } from "@/lib/utils";
 import type { UploadStatus } from "@/types";
 
 export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -243,6 +244,17 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                         {status.skippedCount.toLocaleString()}
                       </p>
                     </div>
+                    {(status.totalTokens ?? 0) > 0 && (
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">AI Tokens</p>
+                        <p className="text-lg font-semibold text-purple-600 dark:text-purple-400">
+                          {formatTokens(status.totalTokens)}
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                          {(status.promptTokens ?? 0).toLocaleString()} in / {(status.completionTokens ?? 0).toLocaleString()} out
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
