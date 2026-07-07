@@ -3,7 +3,7 @@ import { config } from "../../config";
 import { AIServiceError } from "../../utils/errors";
 import { extractedBatchSchema } from "../../utils/validation";
 import { SYSTEM_PROMPT, buildUserPrompt } from "./prompts";
-import type { AIExtractor } from "./AIExtractor";
+import type { AIExtractor, ExtractionResult } from "./AIExtractor";
 import type { RawRow, ExtractedRecord } from "../../types";
 
 export class GeminiAdapter implements AIExtractor {
@@ -15,7 +15,7 @@ export class GeminiAdapter implements AIExtractor {
     this.model = model || "gemini-1.5-flash";
   }
 
-  async extractBatch(rows: RawRow[], sourceColumns: string[]): Promise<ExtractedRecord[]> {
+  async extractBatch(rows: RawRow[], sourceColumns: string[]): Promise<ExtractionResult> {
     try {
       const model = this.genAI.getGenerativeModel({
         model: this.model,
@@ -47,7 +47,16 @@ export class GeminiAdapter implements AIExtractor {
         throw new AIServiceError("Gemini output failed validation", validated.error.issues);
       }
 
-      return validated.data as ExtractedRecord[];
+      const meta = response.usageMetadata;
+
+      return {
+        records: validated.data as ExtractedRecord[],
+        usage: {
+          promptTokens: meta?.promptTokenCount ?? 0,
+          completionTokens: meta?.candidatesTokenCount ?? 0,
+          totalTokens: meta?.totalTokenCount ?? 0,
+        },
+      };
     } catch (err) {
       if (err instanceof AIServiceError) throw err;
       const message = err instanceof Error ? err.message : "Unknown Gemini error";

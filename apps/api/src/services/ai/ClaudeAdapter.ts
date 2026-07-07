@@ -3,7 +3,7 @@ import { config } from "../../config";
 import { AIServiceError } from "../../utils/errors";
 import { extractedBatchSchema } from "../../utils/validation";
 import { SYSTEM_PROMPT, buildUserPrompt } from "./prompts";
-import type { AIExtractor } from "./AIExtractor";
+import type { AIExtractor, ExtractionResult } from "./AIExtractor";
 import type { RawRow, ExtractedRecord } from "../../types";
 
 export class ClaudeAdapter implements AIExtractor {
@@ -15,7 +15,7 @@ export class ClaudeAdapter implements AIExtractor {
     this.model = model || "claude-3-5-sonnet-20241022";
   }
 
-  async extractBatch(rows: RawRow[], sourceColumns: string[]): Promise<ExtractedRecord[]> {
+  async extractBatch(rows: RawRow[], sourceColumns: string[]): Promise<ExtractionResult> {
     try {
       const prompt = buildUserPrompt(rows, sourceColumns);
 
@@ -52,7 +52,16 @@ export class ClaudeAdapter implements AIExtractor {
         throw new AIServiceError("Claude output failed validation", validated.error.issues);
       }
 
-      return validated.data as ExtractedRecord[];
+      const usage = message.usage;
+
+      return {
+        records: validated.data as ExtractedRecord[],
+        usage: {
+          promptTokens: usage.input_tokens,
+          completionTokens: usage.output_tokens,
+          totalTokens: usage.input_tokens + usage.output_tokens,
+        },
+      };
     } catch (err) {
       if (err instanceof AIServiceError) throw err;
       const message = err instanceof Error ? err.message : "Unknown Claude error";

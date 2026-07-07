@@ -3,7 +3,7 @@ import { config } from "../../config";
 import { AIServiceError } from "../../utils/errors";
 import { extractedBatchSchema } from "../../utils/validation";
 import { SYSTEM_PROMPT, buildUserPrompt } from "./prompts";
-import type { AIExtractor } from "./AIExtractor";
+import type { AIExtractor, ExtractionResult } from "./AIExtractor";
 import type { RawRow, ExtractedRecord } from "../../types";
 
 export class OpenAICompatibleAdapter implements AIExtractor {
@@ -18,7 +18,7 @@ export class OpenAICompatibleAdapter implements AIExtractor {
     this.model = model || config.AI_MODEL || "openai/gpt-4o-mini";
   }
 
-  async extractBatch(rows: RawRow[], sourceColumns: string[]): Promise<ExtractedRecord[]> {
+  async extractBatch(rows: RawRow[], sourceColumns: string[]): Promise<ExtractionResult> {
     try {
       const response = await this.client.chat.completions.create({
         model: this.model,
@@ -50,7 +50,16 @@ export class OpenAICompatibleAdapter implements AIExtractor {
         throw new AIServiceError("AI output failed validation", validated.error.issues);
       }
 
-      return validated.data as ExtractedRecord[];
+      const usage = response.usage;
+
+      return {
+        records: validated.data as ExtractedRecord[],
+        usage: {
+          promptTokens: usage?.prompt_tokens ?? 0,
+          completionTokens: usage?.completion_tokens ?? 0,
+          totalTokens: usage?.total_tokens ?? 0,
+        },
+      };
     } catch (err) {
       if (err instanceof AIServiceError) throw err;
       const message = err instanceof Error ? err.message : "Unknown AI error";
