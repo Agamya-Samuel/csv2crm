@@ -45,6 +45,12 @@ export async function getExportUrl(uploadId: string): Promise<string> {
   return `${API_BASE}/api/uploads/${uploadId}/export`;
 }
 
+export async function deleteUpload(uploadId: string): Promise<{ uploadId: string; message: string }> {
+  return request<{ uploadId: string; message: string }>(`/api/uploads/${uploadId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function getAiCredits(): Promise<AiCredits> {
   return request<AiCredits>("/api/ai-credits");
 }
