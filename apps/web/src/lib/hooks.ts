@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { UploadResult, UploadStatus, RecordsResult } from "@/types";
+import type { UploadResult, UploadStatus, RecordsResult, UploadsListResult } from "@/types";
 import * as api from "./api";
 
 export function useUpload() {
@@ -111,4 +111,29 @@ export function useRecords(uploadId: string | null) {
   }, [uploadId]);
 
   return { records, loading, error, fetchRecords };
+}
+
+export function useUploads() {
+  const [data, setData] = useState<UploadsListResult | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchUploads = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await api.getUploads();
+      setData(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch uploads");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUploads();
+  }, [fetchUploads]);
+
+  return { data, loading, error, refetch: fetchUploads };
 }

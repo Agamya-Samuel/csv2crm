@@ -1,4 +1,4 @@
-import type { UploadResult, ConfirmResult, UploadStatus, RecordsResult } from "@/types";
+import type { UploadResult, ConfirmResult, UploadStatus, RecordsResult, UploadsListResult } from "@/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -35,6 +35,10 @@ export async function getUploadStatus(uploadId: string): Promise<UploadStatus> {
 
 export async function getRecords(uploadId: string): Promise<RecordsResult> {
   return request<RecordsResult>(`/api/uploads/${uploadId}/records`);
+}
+
+export async function getUploads(): Promise<UploadsListResult> {
+  return request<UploadsListResult>("/api/uploads");
 }
 
 export async function getExportUrl(uploadId: string): Promise<string> {
