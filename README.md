@@ -9,7 +9,7 @@ A full-stack application that intelligently extracts CRM lead information from a
 │   Next.js Frontend  │  HTTP  │   Express Backend API      │  SQL   │   PostgreSQL     │
 │  (Port 3000)        │ ─────▶│   (Port 3001)              │ ─────▶ │                  │
 │                     │ ◀─────│                            │ ◀───── │                  │
-└─────────────────────┘        └───────────┬────────────────┘        └──────────────────┘
+└─────────────────────┘        └────────────┬───────────────┘        └──────────────────┘
                                             │
                                    ┌────────┴────────┐
                                    ▼                 ▼
