@@ -24,6 +24,12 @@ export function createAIExtractor(): AIExtractor {
       return new GeminiAdapter(config.GEMINI_API_KEY, config.AI_MODEL);
     case "claude":
       return new ClaudeAdapter(config.ANTHROPIC_API_KEY, config.AI_MODEL);
+    case "xiaomimimo":
+      return new OpenAICompatibleAdapter(
+        "https://api.xiaomimimo.com/v1",
+        config.XIAOMIMIMO_API_KEY,
+        config.AI_MODEL
+      );
     default:
       return new OpenAICompatibleAdapter(
         "https://openrouter.ai/api/v1",
