@@ -1,22 +1,22 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import Link from "next/link";
-import { FileSpreadsheet, ArrowLeft, Zap, List } from "lucide-react";
 import FileUploader from "@/components/FileUploader";
 import CsvPreviewTable from "@/components/CsvPreviewTable";
 import ProcessingState from "@/components/ProcessingState";
 import ResultsView from "@/components/ResultsView";
-import ThemeToggle from "@/components/ThemeToggle";
+import Navbar from "@/components/Navbar";
+import SampleFiles from "@/components/SampleFiles";
 import { useUpload, useConfirm, useProcessingPoll, useRecords } from "@/lib/hooks";
 import { getExportUrl } from "@/lib/api";
-import type { UploadResult, CRMRecord } from "@/types";
+import type { UploadResult } from "@/types";
 
 type Step = "upload" | "preview" | "processing" | "results";
 
 export default function Home() {
   const [step, setStep] = useState<Step>("upload");
   const [uploadData, setUploadData] = useState<UploadResult | null>(null);
+  const [creditsRefreshKey, setCreditsRefreshKey] = useState(0);
 
   const { upload, uploading, error: uploadError, result, reset: resetUpload } = useUpload();
   const { confirm, confirming, error: confirmError } = useConfirm();
@@ -39,6 +39,7 @@ export default function Home() {
     if (status?.status === "DONE") {
       fetchRecords();
       setStep("results");
+      setCreditsRefreshKey((k) => k + 1);
     }
   }, [status?.status, fetchRecords]);
 
@@ -69,46 +70,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Zap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                  CSV2CRM
-                </h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  AI-Powered Lead Importer
-                </p>
-              </div>
-            </Link>
-            <div className="flex items-center gap-3">
-              <Link
-                href="/jobs"
-                className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400
-                  hover:text-gray-800 dark:hover:text-gray-200 flex items-center gap-1"
-              >
-                <List className="w-4 h-4" />
-                All Jobs
-              </Link>
-              {step !== "upload" && (
-                <button
-                  onClick={handleReset}
-                  className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400
-                    hover:text-gray-800 dark:hover:text-gray-200 flex items-center gap-1"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  New Import
-                </button>
-              )}
-              <ThemeToggle />
-            </div>
-          </div>
-        </div>
-      </header>
+      <Navbar step={step} onReset={handleReset} creditsRefreshKey={creditsRefreshKey} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
@@ -147,11 +109,14 @@ export default function Home() {
         </div>
 
         {step === "upload" && (
-          <FileUploader
-            onFileSelect={handleFileSelect}
-            isUploading={uploading}
-            error={uploadError}
-          />
+          <>
+            <FileUploader
+              onFileSelect={handleFileSelect}
+              isUploading={uploading}
+              error={uploadError}
+            />
+            <SampleFiles />
+          </>
         )}
 
         {step === "preview" && uploadData && (
