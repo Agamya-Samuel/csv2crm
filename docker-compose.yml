@@ -1,5 +1,6 @@
 services:
   postgres:
+    container_name: csv2crm-postgres
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: postgres
@@ -16,6 +17,7 @@ services:
       retries: 5
 
   redis:
+    container_name: csv2crm-redis
     image: redis:7-alpine
     ports:
       - "6379:6379"
@@ -28,6 +30,7 @@ services:
       retries: 5
 
   api:
+    container_name: csv2crm-api
     build:
       context: .
       dockerfile: apps/api/Dockerfile
@@ -42,6 +45,8 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      XIAOMIMIMO_API_KEY: ${XIAOMIMIMO_API_KEY}
+      MIMO_COOKIE: ${MIMO_COOKIE}
       BATCH_SIZE: ${BATCH_SIZE:-20}
       BATCH_CONCURRENCY: ${BATCH_CONCURRENCY:-3}
       MAX_RETRIES: ${MAX_RETRIES:-3}
@@ -54,6 +59,7 @@ services:
         condition: service_healthy
 
   web:
+    container_name: csv2crm-web
     build:
       context: .
       dockerfile: apps/web/Dockerfile
