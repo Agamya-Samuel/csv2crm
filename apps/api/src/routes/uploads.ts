@@ -16,6 +16,7 @@ router.get("/", async (_req: Request, res: Response, next: NextFunction) => {
       include: {
         batches: true,
         records: { select: { status: true } },
+        aiUsages: { select: { totalTokens: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -37,6 +38,7 @@ router.get("/", async (_req: Request, res: Response, next: NextFunction) => {
         batchesDone,
         importedCount,
         skippedCount,
+        totalTokens: u.aiUsages.reduce((sum, a) => sum + a.totalTokens, 0),
       };
     });
 
@@ -156,6 +158,9 @@ router.get("/:uploadId", async (req: Request, res: Response, next: NextFunction)
       include: {
         batches: true,
         records: { select: { status: true } },
+        aiUsages: {
+          select: { promptTokens: true, completionTokens: true, totalTokens: true },
+        },
       },
     });
 
@@ -189,6 +194,9 @@ router.get("/:uploadId", async (req: Request, res: Response, next: NextFunction)
       batchesDone,
       importedCount,
       skippedCount,
+      totalTokens: uploadRecord.aiUsages.reduce((sum, a) => sum + a.totalTokens, 0),
+      promptTokens: uploadRecord.aiUsages.reduce((sum, a) => sum + a.promptTokens, 0),
+      completionTokens: uploadRecord.aiUsages.reduce((sum, a) => sum + a.completionTokens, 0),
     });
   } catch (err) {
     next(err);
