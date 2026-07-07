@@ -8,7 +8,8 @@ import {
   createColumnHelper,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Download, CheckCircle, XCircle, BarChart3 } from "lucide-react";
+import { Download, CheckCircle, XCircle, BarChart3, GripVertical } from "lucide-react";
+import { useColumnResize, ResizeHandle } from "./useResizableColumns";
 import type { CRMRecord } from "@/types";
 
 interface ResultsViewProps {
@@ -140,6 +141,11 @@ export default function ResultsView({ records, uploadId, onExport }: ResultsView
         </button>
       </div>
 
+      <p className="inline-flex items-center gap-1.5 mb-3 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+        <GripVertical className="w-3.5 h-3.5" />
+        Columns are resizable — drag header edges to resize
+      </p>
+
       <RecordTable records={activeRecords} type={activeTab} />
     </div>
   );
@@ -151,11 +157,12 @@ function RecordTable({ records, type }: { records: CRMRecord[]; type: "imported"
   const columns = useMemo(() => {
     if (type === "skipped") {
       return [
-        columnHelper.accessor("name", { header: "Name", cell: (info) => info.getValue() || "—" }),
-        columnHelper.accessor("email", { header: "Email", cell: (info) => info.getValue() || "—" }),
+        columnHelper.accessor("name", { header: "Name", cell: (info) => info.getValue() || "—", size: 160 }),
+        columnHelper.accessor("email", { header: "Email", cell: (info) => info.getValue() || "—", size: 220 }),
         columnHelper.accessor("mobile_without_country_code", {
           header: "Mobile",
           cell: (info) => info.getValue() || "—",
+          size: 140,
         }),
         columnHelper.accessor("skipReason", {
           header: "Skip Reason",
@@ -164,6 +171,7 @@ function RecordTable({ records, type }: { records: CRMRecord[]; type: "imported"
               {info.getValue() || "—"}
             </span>
           ),
+          size: 260,
         }),
       ];
     }
@@ -171,6 +179,8 @@ function RecordTable({ records, type }: { records: CRMRecord[]; type: "imported"
     return crmColumns.map((col) =>
       columnHelper.accessor(col, {
         header: columnLabels[col] || col,
+        size: 160,
+        minSize: 60,
         cell: (info) => {
           const value = info.getValue();
           if (col === "crm_status" && value) {
@@ -196,8 +206,11 @@ function RecordTable({ records, type }: { records: CRMRecord[]; type: "imported"
     data: records,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
   });
 
+  const { onMouseDown, onTouchStart } = useColumnResize(table);
   const { rows: tableRows } = table.getRowModel();
   const tableContainerRef = useVirtualizer({
     count: tableRows.length,
@@ -216,19 +229,29 @@ function RecordTable({ records, type }: { records: CRMRecord[]; type: "imported"
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
       <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-        <table className="w-full text-sm">
+        <table
+          className="w-full text-sm"
+          style={{ width: table.getCenterTotalSize() }}
+        >
           <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 w-12">
                   #
                 </th>
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 whitespace-nowrap"
+                    className="relative group/col px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 whitespace-nowrap"
+                    style={{ width: header.getSize() }}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
+                    {header.column.getCanResize() && (
+                      <ResizeHandle
+                        onMouseDown={(e) => onMouseDown(e, header)}
+                        onTouchStart={(e) => onTouchStart(e, header)}
+                      />
+                    )}
                   </th>
                 ))}
               </tr>
@@ -240,13 +263,14 @@ function RecordTable({ records, type }: { records: CRMRecord[]; type: "imported"
                 key={row.id}
                 className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
               >
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap border-r border-gray-100 dark:border-gray-800">
+                <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap border-r border-gray-100 dark:border-gray-800 w-12">
                   {index + 1}
                 </td>
                 {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}
                     className="px-4 py-3 text-gray-700 dark:text-gray-300 whitespace-nowrap max-w-[200px] truncate"
+                    style={{ width: cell.column.getSize() }}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
