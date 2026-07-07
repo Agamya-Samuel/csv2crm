@@ -17,11 +17,29 @@ export interface ConfirmResult {
 
 export interface UploadStatus {
   uploadId: string;
+  fileName: string;
+  createdAt: string;
   status: "PENDING" | "PARSING" | "PROCESSING" | "DONE" | "FAILED";
   batchesTotal: number;
   batchesDone: number;
   importedCount: number;
   skippedCount: number;
+}
+
+export interface UploadSummary {
+  uploadId: string;
+  fileName: string;
+  totalRows: number;
+  status: UploadStatus["status"];
+  createdAt: string;
+  batchesTotal: number;
+  batchesDone: number;
+  importedCount: number;
+  skippedCount: number;
+}
+
+export interface UploadsListResult {
+  uploads: UploadSummary[];
 }
 
 export interface CRMRecord {
