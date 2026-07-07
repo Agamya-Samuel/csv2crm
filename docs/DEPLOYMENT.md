@@ -47,6 +47,65 @@ docker-compose ps
 
 ## Cloud Deployment
 
+### Dokploy (Recommended — Full Stack in One Deploy)
+
+[Dokploy](https://dokploy.com) is a self-hosted PaaS that natively supports Docker Compose deployments. The entire csv2crm stack (frontend, API, Postgres, Redis) deploys as a single Docker Compose service.
+
+#### 1. Install Dokploy on your VPS
+
+```bash
+curl -sSL https://dokploy.com/install.sh | sh
+```
+
+#### 2. Create a Docker Compose service
+
+1. Dokploy Dashboard → **Projects** → **Create Project**
+2. **Add Service** → **Docker Compose**
+3. Connect your Git repository (GitHub/GitLab/Bitbucket)
+4. Set compose file path: `docker-compose.yml`
+
+#### 3. Configure environment variables
+
+In the Dokploy UI → **Environment** tab, add these variables:
+
+```
+OPENROUTER_API_KEY=sk-or-your-key-here
+AI_PROVIDER=openrouter
+AI_MODEL=openai/gpt-4o-mini
+BATCH_SIZE=20
+BATCH_CONCURRENCY=3
+MAX_RETRIES=3
+FRONTEND_URL=https://your-app.your-domain.com
+NEXT_PUBLIC_API_URL=https://your-api.your-domain.com
+```
+
+Dokploy writes these to a `.env` file that `docker-compose.yml` reads automatically via `${VAR}` syntax.
+
+#### 4. Configure domains
+
+In the **Domains** tab, add domains for the `web` and `api` services:
+
+| Service | Internal Port | Example Domain |
+|---------|--------------|----------------|
+| `web`   | 3000         | `app.your-domain.com` |
+| `api`   | 3001         | `api.your-domain.com` |
+
+Dokploy auto-provisions SSL certificates via Let's Encrypt.
+
+#### 5. Deploy
+
+Click **Deploy**. Dokploy will:
+1. Clone your repo
+2. Run `docker compose up -d --build`
+3. Build both Dockerfiles (multi-stage)
+4. Start all 4 services with health-check-based ordering
+5. The API automatically runs `prisma migrate deploy` on startup
+
+#### Dokploy Data Persistence
+
+- Postgres and Redis use Docker named volumes (`postgres_data`, `redis_data`) which persist across redeployments.
+- Enable **Volume Backups** in Dokploy (S3-compatible) for automated database backups.
+
 ### Frontend → Vercel
 
 1. Connect your GitHub repo to Vercel
