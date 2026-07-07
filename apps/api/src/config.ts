@@ -13,6 +13,7 @@ const envSchema = z.object({
   GEMINI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
   XIAOMIMIMO_API_KEY: z.string().optional(),
+  MIMO_COOKIE: z.string().optional(),
   BATCH_SIZE: z.coerce.number().int().positive().default(20),
   BATCH_CONCURRENCY: z.coerce.number().int().positive().default(3),
   MAX_RETRIES: z.coerce.number().int().positive().default(3),

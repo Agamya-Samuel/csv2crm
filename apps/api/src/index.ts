@@ -6,6 +6,7 @@ import { config } from "./config";
 import { errorHandler } from "./middleware/errorHandler";
 import healthRoutes from "./routes/health";
 import uploadRoutes from "./routes/uploads";
+import aiCreditsRoutes from "./routes/ai-credits";
 import { createWorker } from "./services/queue/bull";
 import { processBatch } from "./services/queue/processor";
 
@@ -18,6 +19,7 @@ app.use(express.json());
 
 app.use("/api/health", healthRoutes);
 app.use("/api/uploads", uploadRoutes);
+app.use("/api/ai-credits", aiCreditsRoutes);
 
 app.use(errorHandler);
 
