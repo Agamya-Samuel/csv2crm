@@ -300,17 +300,14 @@ function ImportedTable({ records }: { records: CRMRecord[] }) {
             <td className="px-4 py-3 whitespace-nowrap">
               <StatusBadge value={record.crm_status} />
             </td>
-            <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap text-center">
-              —
+            <td className="px-4 py-3 text-gray-400 dark:text-gray-500 whitespace-nowrap text-center text-xs italic">
+              N/A
             </td>
             <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap max-w-[80px] truncate text-xs">
               {record.data_source || "—"}
             </td>
-            <td className="px-4 py-3 whitespace-nowrap">
-              <button className="text-sm font-medium text-gray-600 dark:text-gray-400
-                hover:text-orange-600 dark:hover:text-orange-400 transition-colors flex items-center gap-0.5">
-                More <span className="text-xs">&gt;</span>
-              </button>
+            <td className="px-4 py-3 text-gray-400 dark:text-gray-500 whitespace-nowrap text-xs italic">
+              —
             </td>
           </tr>
         ))}
