@@ -3,12 +3,6 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import {
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
-  createColumnHelper,
-} from "@tanstack/react-table";
-import {
   Zap,
   ArrowLeft,
   RefreshCw,
@@ -19,10 +13,8 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  GripVertical,
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
-import { useColumnResize, ResizeHandle } from "@/components/useResizableColumns";
 import { useUploads } from "@/lib/hooks";
 import { formatTokens } from "@/lib/utils";
 import type { UploadSummary } from "@/types";
@@ -33,27 +25,27 @@ const statusConfig: Record<
 > = {
   PENDING: {
     label: "Pending",
-    colors: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+    colors: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700",
     icon: <Clock className="w-3 h-3" />,
   },
   PARSING: {
     label: "Parsing",
-    colors: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    colors: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800",
     icon: <Loader2 className="w-3 h-3 animate-spin" />,
   },
   PROCESSING: {
     label: "Processing",
-    colors: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    colors: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800",
     icon: <Loader2 className="w-3 h-3 animate-spin" />,
   },
   DONE: {
     label: "Done",
-    colors: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    colors: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border border-green-200 dark:border-green-800",
     icon: <CheckCircle className="w-3 h-3" />,
   },
   FAILED: {
     label: "Failed",
-    colors: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    colors: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800",
     icon: <XCircle className="w-3 h-3" />,
   },
 };
@@ -61,192 +53,33 @@ const statusConfig: Record<
 export default function JobsPage() {
   const { data, loading, error, refetch } = useUploads();
 
-  const columnHelper = createColumnHelper<UploadSummary>();
-
-  const columns = useMemo(
-    () => [
-      columnHelper.accessor("fileName", {
-        header: "File Name",
-        size: 220,
-        minSize: 100,
-        cell: (info) => (
-          <div className="flex items-center gap-2">
-            <FileSpreadsheet className="w-4 h-4 text-blue-500 flex-shrink-0" />
-            <span className="truncate font-medium text-gray-800 dark:text-gray-200">
-              {info.getValue()}
-            </span>
-          </div>
-        ),
-      }),
-      columnHelper.accessor("status", {
-        header: "Status",
-        size: 140,
-        minSize: 100,
-        cell: (info) => {
-          const cfg = statusConfig[info.getValue()] || statusConfig.PENDING;
-          return (
-            <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${cfg.colors}`}
-            >
-              {cfg.icon}
-              {cfg.label}
-            </span>
-          );
-        },
-      }),
-      columnHelper.accessor("totalRows", {
-        header: "Total Rows",
-        size: 110,
-        minSize: 80,
-        cell: (info) => (
-          <span className="text-gray-700 dark:text-gray-300">
-            {info.getValue().toLocaleString()}
-          </span>
-        ),
-      }),
-      {
-        id: "progress",
-        header: "Progress",
-        size: 160,
-        minSize: 100,
-        cell: ({ row }: { row: any }) => {
-          const { batchesDone, batchesTotal, status } = row.original;
-          if (status === "PENDING") return <span className="text-gray-400">—</span>;
-          if (batchesTotal === 0) return <span className="text-gray-400">—</span>;
-          const pct = Math.round((batchesDone / batchesTotal) * 100);
-          return (
-            <div className="flex items-center gap-2">
-              <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                <div
-                  className={`h-2 rounded-full transition-all duration-500 ${
-                    status === "FAILED" ? "bg-red-500" : "bg-blue-500"
-                  }`}
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-              <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                {batchesDone}/{batchesTotal}
-              </span>
-            </div>
-          );
-        },
-      } as any,
-      columnHelper.accessor("importedCount", {
-        header: "Imported",
-        size: 100,
-        minSize: 70,
-        cell: (info) => (
-          <span className="text-green-600 dark:text-green-400 font-medium">
-            {info.getValue().toLocaleString()}
-          </span>
-        ),
-      }),
-      columnHelper.accessor("skippedCount", {
-        header: "Skipped",
-        size: 100,
-        minSize: 70,
-        cell: (info) => (
-          <span className="text-yellow-600 dark:text-yellow-400 font-medium">
-            {info.getValue().toLocaleString()}
-          </span>
-        ),
-      }),
-      columnHelper.accessor("totalTokens", {
-        header: "Tokens",
-        size: 120,
-        minSize: 80,
-        cell: (info) => {
-          const val = info.getValue();
-          if (!val) return <span className="text-gray-400">—</span>;
-          return (
-            <span className="text-purple-600 dark:text-purple-400 font-medium">
-              {formatTokens(val)}
-            </span>
-          );
-        },
-      }),
-      columnHelper.accessor("estimatedCost", {
-        header: "Cost",
-        size: 100,
-        minSize: 70,
-        cell: (info) => {
-          const val = info.getValue();
-          if (!val) return <span className="text-gray-400">—</span>;
-          return (
-            <span className="text-green-600 dark:text-green-400 font-medium">
-              ${val < 0.01 ? val.toFixed(4) : val.toFixed(2)}
-            </span>
-          );
-        },
-      }),
-      columnHelper.accessor("createdAt", {
-        header: "Created At",
-        size: 180,
-        minSize: 120,
-        cell: (info) => {
-          const date = new Date(info.getValue());
-          return (
-            <span className="text-gray-500 dark:text-gray-400">
-              {date.toLocaleDateString()}{" "}
-              {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            </span>
-          );
-        },
-      }),
-      {
-        id: "actions",
-        header: "",
-        size: 80,
-        minSize: 60,
-        cell: ({ row }: { row: any }) => (
-          <Link
-            href={`/jobs/${row.original.uploadId}`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400
-              hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            View
-          </Link>
-        ),
-      } as any,
-    ],
-    [columnHelper]
-  );
-
-  const table = useReactTable({
-    data: data?.uploads ?? [],
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    enableColumnResizing: true,
-    columnResizeMode: "onChange",
-  });
-
-  const { onMouseDown, onTouchStart } = useColumnResize(table);
-  const { rows: tableRows } = table.getRowModel();
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      {/* Header */}
+      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Zap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-lg bg-gray-900 dark:bg-white flex items-center justify-center">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white dark:text-gray-900">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                </svg>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                <h1 className="text-base font-bold text-gray-900 dark:text-white leading-tight">
                   CSV2CRM
                 </h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">
                   AI-Powered Lead Importer
                 </p>
               </div>
             </Link>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Link
                 href="/"
-                className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400
-                  hover:text-gray-800 dark:hover:text-gray-200 flex items-center gap-1"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium
+                  text-white bg-orange-500 hover:bg-orange-600 transition-all duration-200 shadow-sm"
               >
                 <ArrowLeft className="w-4 h-4" />
                 New Import
@@ -257,22 +90,22 @@ export default function JobsPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Container */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {/* Title Block */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              All Jobs
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">All Jobs</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
               View and manage all CSV import jobs
             </p>
           </div>
           <button
             onClick={refetch}
-            className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400
-              hover:text-gray-800 dark:hover:text-gray-200 border border-gray-200
-              dark:border-gray-700 rounded-lg flex items-center gap-2 hover:bg-gray-50
-              dark:hover:bg-gray-800 transition-colors"
+            className="px-3.5 py-2 text-sm text-gray-600 dark:text-gray-400
+              hover:text-orange-600 dark:hover:text-orange-400 border border-gray-200
+              dark:border-gray-700 rounded-xl flex items-center gap-2 bg-white
+              dark:bg-gray-800 transition-colors shadow-sm"
           >
             <RefreshCw className="w-4 h-4" />
             Refresh
@@ -280,19 +113,19 @@ export default function JobsPage() {
         </div>
 
         {loading && (
-          <div className="text-center py-20">
-            <Loader2 className="w-10 h-10 text-blue-500 mx-auto mb-4 animate-spin" />
+          <div className="text-center py-20 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+            <Loader2 className="w-10 h-10 text-orange-500 mx-auto mb-4 animate-spin" />
             <p className="text-gray-500 dark:text-gray-400">Loading jobs...</p>
           </div>
         )}
 
         {error && (
-          <div className="text-center py-20">
+          <div className="text-center py-20 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
             <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-4" />
-            <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
+            <p className="text-red-600 dark:text-red-400 mb-4 font-medium">{error}</p>
             <button
               onClick={refetch}
-              className="px-4 py-2 text-sm bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors shadow-sm"
             >
               Try Again
             </button>
@@ -300,9 +133,9 @@ export default function JobsPage() {
         )}
 
         {!loading && !error && (!data || data.uploads.length === 0) && (
-          <div className="text-center py-20">
+          <div className="text-center py-20 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
             <FileSpreadsheet className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">
               No jobs yet
             </h3>
             <p className="text-gray-500 dark:text-gray-400 mb-6">
@@ -310,8 +143,8 @@ export default function JobsPage() {
             </p>
             <Link
               href="/"
-              className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700
-                text-white font-medium rounded-lg transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-orange-500 hover:bg-orange-600
+                text-white font-semibold rounded-xl transition-colors shadow-md"
             >
               Upload CSV
             </Link>
@@ -319,65 +152,120 @@ export default function JobsPage() {
         )}
 
         {!loading && !error && data && data.uploads.length > 0 && (
-          <>
-            <p className="inline-flex items-center gap-1.5 mb-3 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
-              <GripVertical className="w-3.5 h-3.5" />
-              Columns are resizable — drag header edges to resize
-            </p>
-            <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-900">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
-              <table
-                className="w-full text-sm table-fixed"
-              >
-                <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
+              <table className="w-full text-sm min-w-[900px]">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    {["FILE NAME", "STATUS", "TOTAL ROWS", "PROGRESS", "IMPORTED", "SKIPPED", "TOKENS", "COST", "CREATED AT", "ACTIONS"].map(
+                      (col) => (
                         <th
-                          key={header.id}
-                          className="relative group/col px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 whitespace-nowrap"
-                          style={{ width: header.getSize() }}
+                          key={col}
+                          className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400
+                            uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 whitespace-nowrap"
                         >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                          {header.column.getCanResize() && (
-                            <ResizeHandle
-                              onMouseDown={(e) => onMouseDown(e, header)}
-                              onTouchStart={(e) => onTouchStart(e, header)}
-                            />
-                          )}
+                          {col}
                         </th>
-                      ))}
-                    </tr>
-                  ))}
+                      )
+                    )}
+                  </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                  {tableRows.map((row) => (
-                    <tr
-                      key={row.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <td
-                          key={cell.id}
-                          className="px-4 py-3 text-gray-700 dark:text-gray-300 whitespace-nowrap"
-                          style={{ width: cell.column.getSize() }}
-                        >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {data.uploads.map((upload) => {
+                    const cfg = statusConfig[upload.status] || statusConfig.PENDING;
+                    const pct = upload.batchesTotal > 0 ? Math.round((upload.batchesDone / upload.batchesTotal) * 100) : 0;
+                    const date = new Date(upload.createdAt);
+
+                    return (
+                      <tr
+                        key={upload.uploadId}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
+                      >
+                        {/* File Name */}
+                        <td className="px-4 py-3 font-semibold text-gray-800 dark:text-gray-200 max-w-[200px] truncate">
+                          <div className="flex items-center gap-2">
+                            <FileSpreadsheet className="w-4 h-4 text-teal-600 dark:text-teal-400 flex-shrink-0" />
+                            <span className="truncate">{upload.fileName}</span>
+                          </div>
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.colors}`}>
+                            {cfg.icon}
+                            {cfg.label}
+                          </span>
+                        </td>
+
+                        {/* Total Rows */}
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300 font-medium whitespace-nowrap">
+                          {upload.totalRows.toLocaleString()}
+                        </td>
+
+                        {/* Progress */}
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {upload.status === "PENDING" || upload.batchesTotal === 0 ? (
+                            <span className="text-gray-400">—</span>
+                          ) : (
+                            <div className="flex items-center gap-2 min-w-[120px]">
+                              <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden border border-gray-200 dark:border-gray-700">
+                                <div
+                                  className={`h-2 rounded-full transition-all duration-500 ${
+                                    upload.status === "FAILED" ? "bg-red-500" : "bg-orange-500"
+                                  }`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {pct}%
+                              </span>
+                            </div>
                           )}
                         </td>
-                      ))}
-                    </tr>
-                  ))}
+
+                        {/* Imported */}
+                        <td className="px-4 py-3 text-green-600 dark:text-green-400 font-semibold whitespace-nowrap">
+                          {upload.importedCount.toLocaleString()}
+                        </td>
+
+                        {/* Skipped */}
+                        <td className="px-4 py-3 text-yellow-600 dark:text-yellow-400 font-semibold whitespace-nowrap">
+                          {upload.skippedCount.toLocaleString()}
+                        </td>
+
+                        {/* Tokens */}
+                        <td className="px-4 py-3 text-purple-600 dark:text-purple-400 font-medium whitespace-nowrap">
+                          {upload.totalTokens ? formatTokens(upload.totalTokens) : "—"}
+                        </td>
+
+                        {/* Cost */}
+                        <td className="px-4 py-3 text-green-600 dark:text-green-400 font-semibold whitespace-nowrap">
+                          {upload.estimatedCost ? `$${upload.estimatedCost < 0.01 ? upload.estimatedCost.toFixed(4) : upload.estimatedCost.toFixed(2)}` : "—"}
+                        </td>
+
+                        {/* Created At */}
+                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
+                          {date.toLocaleDateString()}{" "}
+                          {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <Link
+                            href={`/jobs/${upload.uploadId}`}
+                            className="text-sm font-semibold text-gray-600 dark:text-gray-400
+                              hover:text-orange-600 dark:hover:text-orange-400 transition-colors flex items-center gap-0.5"
+                          >
+                            More <span className="text-xs">&gt;</span>
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </div>
-          </>
         )}
       </main>
     </div>

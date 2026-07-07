@@ -112,34 +112,34 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     const configs: Record<string, { label: string; colors: string; icon: React.ReactNode }> = {
       PENDING: {
         label: "Pending",
-        colors: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+        colors: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700",
         icon: <Clock className="w-3.5 h-3.5" />,
       },
       PARSING: {
         label: "Parsing",
-        colors: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+        colors: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800",
         icon: <Loader2 className="w-3.5 h-3.5 animate-spin" />,
       },
       PROCESSING: {
         label: "Processing",
-        colors: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+        colors: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800",
         icon: <Loader2 className="w-3.5 h-3.5 animate-spin" />,
       },
       DONE: {
         label: "Complete",
-        colors: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+        colors: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border border-green-200 dark:border-green-800",
         icon: <CheckCircle className="w-3.5 h-3.5" />,
       },
       FAILED: {
         label: "Failed",
-        colors: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+        colors: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800",
         icon: <XCircle className="w-3.5 h-3.5" />,
       },
     };
     const cfg = configs[s] || configs.PENDING;
     return (
       <span
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${cfg.colors}`}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold ${cfg.colors}`}
       >
         {cfg.icon}
         {cfg.label}
@@ -149,35 +149,40 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      {/* Sticky Header */}
+      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Zap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-lg bg-gray-900 dark:bg-white flex items-center justify-center">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white dark:text-gray-900">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                </svg>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                <h1 className="text-base font-bold text-gray-900 dark:text-white leading-tight">
                   CSV2CRM
                 </h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">
                   AI-Powered Lead Importer
                 </p>
               </div>
             </Link>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Link
                 href="/jobs"
-                className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400
-                  hover:text-gray-800 dark:hover:text-gray-200 flex items-center gap-1"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium
+                  text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white
+                  hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
               >
                 <ArrowLeft className="w-4 h-4" />
                 All Jobs
               </Link>
               <Link
                 href="/"
-                className="px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400
-                  hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium
+                  text-white bg-orange-500 hover:bg-orange-600 transition-all duration-200 shadow-sm"
               >
                 New Import
               </Link>
@@ -187,25 +192,24 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {initialLoading && (
-          <div className="text-center py-20">
-            <Loader2 className="w-10 h-10 text-blue-500 mx-auto mb-4 animate-spin" />
+          <div className="text-center py-20 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+            <Loader2 className="w-10 h-10 text-orange-500 mx-auto mb-4 animate-spin" />
             <p className="text-gray-500 dark:text-gray-400">Loading job details...</p>
           </div>
         )}
 
         {initialError && (
-          <div className="text-center py-20">
+          <div className="text-center py-20 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
             <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
+            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2">
               Failed to Load Job
             </h3>
             <p className="text-red-600 dark:text-red-400 mb-4">{initialError}</p>
             <Link
               href="/jobs"
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-gray-100
-                dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors shadow-sm"
             >
               Back to Jobs
             </Link>
@@ -214,15 +218,18 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
         {!initialLoading && !initialError && status && (
           <>
-            <div className="mb-8 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            {/* Job Summary Banner Card */}
+            <div className="mb-8 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <FileSpreadsheet className="w-8 h-8 text-blue-500" />
+                  <div className="w-12 h-12 rounded-xl bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800 flex items-center justify-center flex-shrink-0">
+                    <FileSpreadsheet className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+                  </div>
                   <div>
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                       {status.fileName}
                     </h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                       ID: {uploadId} •{" "}
                       {new Date(status.createdAt).toLocaleDateString()}{" "}
                       {new Date(status.createdAt).toLocaleTimeString([], {
@@ -232,14 +239,14 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2.5">
                   {statusBadge(status.status)}
                   {status.status === "PENDING" && (
                     <button
                       onClick={handleConfirm}
                       disabled={confirming}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium
-                        rounded-lg transition-colors duration-200 flex items-center gap-2 text-sm"
+                      className="px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-400 text-white font-semibold
+                        rounded-xl transition-all duration-200 flex items-center gap-2 text-sm shadow-md"
                     >
                       {confirming ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -252,8 +259,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                   {status.status === "DONE" && (
                     <button
                       onClick={handleExport}
-                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium
-                        rounded-lg transition-colors duration-200 flex items-center gap-2 text-sm"
+                      className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold
+                        rounded-xl transition-all duration-200 flex items-center gap-2 text-sm shadow-md"
                     >
                       <Download className="w-4 h-4" />
                       Export CSV
@@ -262,8 +269,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                   <button
                     onClick={handleDelete}
                     disabled={deleting}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-medium
-                      rounded-lg transition-colors duration-200 flex items-center gap-2 text-sm"
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-semibold
+                      rounded-xl transition-all duration-200 flex items-center gap-2 text-sm shadow-md"
                   >
                     {deleting ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -276,17 +283,17 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               </div>
 
               {status.status !== "PENDING" && status.batchesTotal > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="mt-5 pt-5 border-t border-gray-100 dark:border-gray-800">
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                     <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Batches</p>
-                      <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Batches</p>
+                      <p className="text-base font-bold text-gray-800 dark:text-gray-200 mt-0.5">
                         {status.batchesDone} / {status.batchesTotal}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Progress</p>
-                      <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Progress</p>
+                      <p className="text-base font-bold text-gray-800 dark:text-gray-200 mt-0.5">
                         {status.batchesTotal > 0
                           ? Math.round((status.batchesDone / status.batchesTotal) * 100)
                           : 0}
@@ -294,37 +301,31 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Imported</p>
-                      <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Imported</p>
+                      <p className="text-base font-bold text-green-600 dark:text-green-400 mt-0.5">
                         {status.importedCount.toLocaleString()}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Skipped</p>
-                      <p className="text-lg font-semibold text-yellow-600 dark:text-yellow-400">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Skipped</p>
+                      <p className="text-base font-bold text-yellow-600 dark:text-yellow-400 mt-0.5">
                         {status.skippedCount.toLocaleString()}
                       </p>
                     </div>
                     {(status.totalTokens ?? 0) > 0 && (
                       <>
                         <div>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">AI Tokens</p>
-                          <p className="text-lg font-semibold text-purple-600 dark:text-purple-400">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">AI Tokens</p>
+                          <p className="text-base font-bold text-purple-600 dark:text-purple-400 mt-0.5">
                             {formatTokens(status.totalTokens)}
-                          </p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500">
-                            {(status.promptTokens ?? 0).toLocaleString()} in / {(status.completionTokens ?? 0).toLocaleString()} out
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">Est. Cost</p>
-                          <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Est. Cost</p>
+                          <p className="text-base font-bold text-green-600 dark:text-green-400 mt-0.5">
                             ${(status.estimatedCost ?? 0) < 0.01
                               ? (status.estimatedCost ?? 0).toFixed(4)
                               : (status.estimatedCost ?? 0).toFixed(2)}
-                          </p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500">
-                            based on provider rates
                           </p>
                         </div>
                       </>
@@ -339,9 +340,9 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             )}
 
             {status.status === "FAILED" && (
-              <div className="text-center py-12">
+              <div className="text-center py-12 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
                 <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2">
                   Job Failed
                 </h3>
                 <p className="text-sm text-red-600 dark:text-red-400">
@@ -351,20 +352,20 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             )}
 
             {status.status === "PENDING" && (
-              <div className="text-center py-12">
+              <div className="text-center py-12 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
                 <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2">
                   Waiting to Process
                 </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
                   This job has {status.totalRows?.toLocaleString() ?? 0} rows ready.
                   Click Continue Processing to start AI extraction.
                 </p>
                 <button
                   onClick={handleConfirm}
                   disabled={confirming}
-                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium
-                    rounded-lg transition-colors duration-200 flex items-center gap-2 mx-auto"
+                  className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-400 text-white font-semibold
+                    rounded-xl transition-all duration-200 flex items-center gap-2 mx-auto shadow-md"
                 >
                   {confirming ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -386,12 +387,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             {status.status === "DONE" && (
               <>
                 {recordsLoading && (
-                  <div className="text-center py-12">
-                    <Loader2 className="w-8 h-8 text-blue-500 mx-auto mb-4 animate-spin" />
+                  <div className="text-center py-12 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <Loader2 className="w-8 h-8 text-orange-500 mx-auto mb-4 animate-spin" />
                     <p className="text-gray-500 dark:text-gray-400">Loading results...</p>
                   </div>
                 )}
-                {records && (
+                {records && !recordsLoading && (
                   <ResultsView
                     records={records.records}
                     uploadId={uploadId}
