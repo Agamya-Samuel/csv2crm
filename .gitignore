@@ -12,6 +12,7 @@ out/
 # Environment
 .env
 .env.local
+.env.production
 .env.*.local
 
 # IDE

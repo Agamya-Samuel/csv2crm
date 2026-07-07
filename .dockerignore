@@ -3,6 +3,7 @@ apps/*/node_modules
 .git
 .env
 .env.local
+.env.production
 .env.*.local
 *.md
 !README.md

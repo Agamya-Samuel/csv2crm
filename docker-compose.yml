@@ -6,8 +6,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: csv2crm
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,8 +19,8 @@ services:
   redis:
     container_name: csv2crm-redis
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -34,8 +34,8 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    ports:
-      - "3001:3001"
+    expose:
+      - "3001"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/csv2crm
       REDIS_URL: redis://redis:6379
@@ -63,8 +63,8 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
     depends_on:
