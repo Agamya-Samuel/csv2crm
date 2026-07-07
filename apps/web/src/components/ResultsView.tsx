@@ -1,15 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import {
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
-  createColumnHelper,
-} from "@tanstack/react-table";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { Download, CheckCircle, XCircle, BarChart3, GripVertical } from "lucide-react";
-import { useColumnResize, ResizeHandle } from "./useResizableColumns";
+import { useState, useMemo, useCallback } from "react";
+import { Download, CheckCircle, XCircle, BarChart3, Search, RefreshCw } from "lucide-react";
 import type { CRMRecord } from "@/types";
 
 interface ResultsViewProps {
@@ -18,267 +10,354 @@ interface ResultsViewProps {
   onExport: () => void;
 }
 
-const crmColumns = [
-  "name",
-  "email",
-  "country_code",
-  "mobile_without_country_code",
-  "company",
-  "city",
-  "state",
-  "country",
-  "crm_status",
-  "crm_note",
-  "data_source",
-] as const;
+const PAGE_SIZE = 10;
 
-const columnLabels: Record<string, string> = {
-  name: "Name",
-  email: "Email",
-  country_code: "Country Code",
-  mobile_without_country_code: "Mobile",
-  company: "Company",
-  city: "City",
-  state: "State",
-  country: "Country",
-  crm_status: "Status",
-  crm_note: "Notes",
-  data_source: "Source",
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  GOOD_LEAD_FOLLOW_UP: { label: "Good Lead", className: "badge-good-lead" },
+  SALE_DONE: { label: "Sale Done", className: "badge-sale-done" },
+  DID_NOT_CONNECT: { label: "Did Not Connect", className: "badge-did-not-connect" },
+  BAD_LEAD: { label: "Bad Lead", className: "badge-bad-lead" },
+  NOT_DIALED: { label: "Not Dialed", className: "badge-not-dialed" },
 };
+
+function StatusBadge({ value }: { value: string | null }) {
+  if (!value) {
+    return (
+      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium badge-not-dialed">
+        Not Dialed
+      </span>
+    );
+  }
+  const config = STATUS_CONFIG[value] ?? { label: value, className: "badge-not-dialed" };
+  return (
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${config.className}`}>
+      {config.label}
+    </span>
+  );
+}
+
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return dateStr;
+  }
+}
 
 export default function ResultsView({ records, uploadId, onExport }: ResultsViewProps) {
   const [activeTab, setActiveTab] = useState<"imported" | "skipped">("imported");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  const importedRecords = useMemo(
-    () => records.filter((r) => r.status === "IMPORTED"),
-    [records]
-  );
-
-  const skippedRecords = useMemo(
-    () => records.filter((r) => r.status === "SKIPPED"),
-    [records]
-  );
+  const importedRecords = useMemo(() => records.filter((r) => r.status === "IMPORTED"), [records]);
+  const skippedRecords = useMemo(() => records.filter((r) => r.status === "SKIPPED"), [records]);
 
   const activeRecords = activeTab === "imported" ? importedRecords : skippedRecords;
 
+  const filteredRecords = useMemo(() => {
+    if (!searchQuery.trim()) return activeRecords;
+    const q = searchQuery.toLowerCase();
+    return activeRecords.filter(
+      (r) =>
+        r.email?.toLowerCase().includes(q) ||
+        r.mobile_without_country_code?.includes(q) ||
+        r.name?.toLowerCase().includes(q)
+    );
+  }, [activeRecords, searchQuery]);
+
+  const visibleRecords = filteredRecords.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredRecords.length;
+
+  const handleLoadMore = useCallback(() => {
+    setVisibleCount((c) => c + PAGE_SIZE);
+  }, []);
+
+  const handleTabChange = useCallback((tab: "imported" | "skipped") => {
+    setActiveTab(tab);
+    setVisibleCount(PAGE_SIZE);
+    setSearchQuery("");
+  }, []);
+
   return (
     <div className="w-full">
+      {/* Page Header */}
       <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-            Import Results
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Upload ID: {uploadId}
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Manage Your Leads</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+            Monitor lead status, assign tasks, and close deals faster.
           </p>
         </div>
         <button
           onClick={onExport}
-          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium
-            rounded-lg transition-colors duration-200 flex items-center gap-2"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white
+            bg-orange-500 hover:bg-orange-600 transition-all duration-200 shadow-md"
         >
           <Download className="w-4 h-4" />
           Export CSV
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <BarChart3 className="w-8 h-8 text-blue-500" />
-            <div>
-              <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-                {records.length}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Total Records</p>
-            </div>
+      {/* Stats row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <StatCard
+          value={records.length}
+          label="Total Records"
+          icon={<BarChart3 className="w-6 h-6 text-blue-500" />}
+          color="text-gray-800 dark:text-gray-100"
+        />
+        <StatCard
+          value={importedRecords.length}
+          label="Imported"
+          icon={<CheckCircle className="w-6 h-6 text-green-500" />}
+          color="text-green-600 dark:text-green-400"
+        />
+        <StatCard
+          value={skippedRecords.length}
+          label="Skipped"
+          icon={<XCircle className="w-6 h-6 text-yellow-500" />}
+          color="text-yellow-600 dark:text-yellow-400"
+        />
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-5 border-b border-gray-200 dark:border-gray-700">
+        <TabButton
+          active={activeTab === "imported"}
+          onClick={() => handleTabChange("imported")}
+          label={`Imported (${importedRecords.length})`}
+        />
+        <TabButton
+          active={activeTab === "skipped"}
+          onClick={() => handleTabChange("skipped")}
+          label={`Skipped (${skippedRecords.length})`}
+        />
+      </div>
+
+      {/* Leads section header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+        <h3 className="text-base font-bold text-gray-900 dark:text-white">Your Leads</h3>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Enter email or phone number..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-sm bg-white dark:bg-gray-800
+                border border-gray-200 dark:border-gray-700 rounded-xl
+                text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500
+                focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent
+                transition-all duration-200"
+            />
           </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <CheckCircle className="w-8 h-8 text-green-500" />
-            <div>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {importedRecords.length}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Imported</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <XCircle className="w-8 h-8 text-yellow-500" />
-            <div>
-              <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                {skippedRecords.length}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Skipped</p>
-            </div>
-          </div>
+          <button
+            onClick={() => setSearchQuery("")}
+            title="Refresh / Clear search"
+            className="p-2 rounded-xl border border-gray-200 dark:border-gray-700
+              bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400
+              hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      <div className="flex gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
-        <button
-          onClick={() => setActiveTab("imported")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === "imported"
-              ? "border-blue-500 text-blue-600 dark:text-blue-400"
-              : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-          }`}
-        >
-          Imported ({importedRecords.length})
-        </button>
-        <button
-          onClick={() => setActiveTab("skipped")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === "skipped"
-              ? "border-yellow-500 text-yellow-600 dark:text-yellow-400"
-              : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-          }`}
-        >
-          Skipped ({skippedRecords.length})
-        </button>
+      {/* Table */}
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          {activeTab === "imported" ? (
+            <ImportedTable records={visibleRecords as CRMRecord[]} />
+          ) : (
+            <SkippedTable records={visibleRecords as CRMRecord[]} />
+          )}
+        </div>
       </div>
 
-      <p className="inline-flex items-center gap-1.5 mb-3 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
-        <GripVertical className="w-3.5 h-3.5" />
-        Columns are resizable — drag header edges to resize
-      </p>
+      {/* No results */}
+      {filteredRecords.length === 0 && (
+        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+          {searchQuery ? `No results matching "${searchQuery}"` : `No ${activeTab} records found.`}
+        </div>
+      )}
 
-      <RecordTable records={activeRecords} type={activeTab} />
+      {/* Load more */}
+      {hasMore && (
+        <div className="flex justify-center mt-6">
+          <button
+            onClick={handleLoadMore}
+            className="px-8 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300
+              hover:text-orange-600 dark:hover:text-orange-400 transition-colors duration-200"
+          >
+            Load more
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
-function RecordTable({ records, type }: { records: CRMRecord[]; type: "imported" | "skipped" }) {
-  const columnHelper = createColumnHelper<CRMRecord>();
+/* ───────── Sub-components ───────── */
 
-  const columns = useMemo(() => {
-    if (type === "skipped") {
-      return [
-        columnHelper.accessor("name", { header: "Name", cell: (info) => info.getValue() || "—", size: 160 }),
-        columnHelper.accessor("email", { header: "Email", cell: (info) => info.getValue() || "—", size: 220 }),
-        columnHelper.accessor("mobile_without_country_code", {
-          header: "Mobile",
-          cell: (info) => info.getValue() || "—",
-          size: 140,
-        }),
-        columnHelper.accessor("skipReason", {
-          header: "Skip Reason",
-          cell: (info) => (
-            <span className="text-yellow-600 dark:text-yellow-400">
-              {info.getValue() || "—"}
-            </span>
-          ),
-          size: 260,
-        }),
-      ];
-    }
-
-    return crmColumns.map((col) =>
-      columnHelper.accessor(col, {
-        header: columnLabels[col] || col,
-        size: 160,
-        minSize: 60,
-        cell: (info) => {
-          const value = info.getValue();
-          if (col === "crm_status" && value) {
-            const colors: Record<string, string> = {
-              GOOD_LEAD_FOLLOW_UP: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-              DID_NOT_CONNECT: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-              BAD_LEAD: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-              SALE_DONE: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-            };
-            return (
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors[value] || ""}`}>
-                {value}
-              </span>
-            );
-          }
-          return value || "—";
-        },
-      })
-    );
-  }, [type, columnHelper]);
-
-  const table = useReactTable({
-    data: records,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    enableColumnResizing: true,
-    columnResizeMode: "onChange",
-  });
-
-  const { onMouseDown, onTouchStart } = useColumnResize(table);
-  const { rows: tableRows } = table.getRowModel();
-  const tableContainerRef = useVirtualizer({
-    count: tableRows.length,
-    getScrollElement: () => null,
-    estimateSize: () => 40,
-  });
-
-  if (records.length === 0) {
-    return (
-      <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-        No {type} records found.
-      </div>
-    );
-  }
-
+function StatCard({
+  value,
+  label,
+  icon,
+  color,
+}: {
+  value: number;
+  label: string;
+  icon: React.ReactNode;
+  color: string;
+}) {
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-      <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-        <table
-          className="w-full text-sm table-fixed"
-        >
-          <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 w-12">
-                  #
-                </th>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="relative group/col px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 whitespace-nowrap"
-                    style={{ width: header.getSize() }}
-                  >
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                    {header.column.getCanResize() && (
-                      <ResizeHandle
-                        onMouseDown={(e) => onMouseDown(e, header)}
-                        onTouchStart={(e) => onTouchStart(e, header)}
-                      />
-                    )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            {tableRows.map((row, index) => (
-              <tr
-                key={row.id}
-                className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-              >
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap border-r border-gray-100 dark:border-gray-800 w-12">
-                  {index + 1}
-                </td>
-                {row.getVisibleCells().map((cell) => (
-                  <td
-                    key={cell.id}
-                    className="px-4 py-3 text-gray-700 dark:text-gray-300 whitespace-nowrap max-w-[200px] truncate"
-                    style={{ width: cell.column.getSize() }}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
+      <div className="flex items-center gap-3">
+        {icon}
+        <div>
+          <p className={`text-3xl font-bold ${color}`}>{value}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{label}</p>
+        </div>
       </div>
     </div>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+        active
+          ? "border-orange-500 text-orange-600 dark:text-orange-400"
+          : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function ImportedTable({ records }: { records: CRMRecord[] }) {
+  return (
+    <table className="w-full text-sm min-w-[900px]">
+      <thead className="bg-gray-50 dark:bg-gray-800">
+        <tr>
+          {["LEAD NAME", "EMAIL", "CONTACT", "DATE CREATED", "COMPANY", "STATUS", "QUALITY", "SOURCE", "ACTIONS"].map(
+            (col) => (
+              <th
+                key={col}
+                className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400
+                  uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 whitespace-nowrap"
+              >
+                {col}
+              </th>
+            )
+          )}
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+        {records.map((record) => (
+          <tr
+            key={record.id}
+            className="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
+          >
+            <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">
+              {record.name || "—"}
+            </td>
+            <td className="px-4 py-3 text-gray-600 dark:text-gray-400 max-w-[200px] truncate">
+              {record.email || "—"}
+            </td>
+            <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+              {record.country_code && record.mobile_without_country_code
+                ? `+${record.country_code}${record.mobile_without_country_code}`
+                : record.mobile_without_country_code || "—"}
+            </td>
+            <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap text-xs">
+              {formatDate(record.created_at)}
+            </td>
+            <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap max-w-[120px] truncate">
+              {record.company || "—"}
+            </td>
+            <td className="px-4 py-3 whitespace-nowrap">
+              <StatusBadge value={record.crm_status} />
+            </td>
+            <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap text-center">
+              —
+            </td>
+            <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap max-w-[80px] truncate text-xs">
+              {record.data_source || "—"}
+            </td>
+            <td className="px-4 py-3 whitespace-nowrap">
+              <button className="text-sm font-medium text-gray-600 dark:text-gray-400
+                hover:text-orange-600 dark:hover:text-orange-400 transition-colors flex items-center gap-0.5">
+                More <span className="text-xs">&gt;</span>
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function SkippedTable({ records }: { records: CRMRecord[] }) {
+  return (
+    <table className="w-full text-sm min-w-[600px]">
+      <thead className="bg-gray-50 dark:bg-gray-800">
+        <tr>
+          {["NAME", "EMAIL", "CONTACT", "SKIP REASON"].map((col) => (
+            <th
+              key={col}
+              className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400
+                uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 whitespace-nowrap"
+            >
+              {col}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+        {records.map((record) => (
+          <tr
+            key={record.id}
+            className="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
+          >
+            <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200 whitespace-nowrap">
+              {record.name || "—"}
+            </td>
+            <td className="px-4 py-3 text-gray-600 dark:text-gray-400 max-w-[200px] truncate">
+              {record.email || "—"}
+            </td>
+            <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+              {record.mobile_without_country_code || "—"}
+            </td>
+            <td className="px-4 py-3 max-w-[300px]">
+              <span className="text-yellow-600 dark:text-yellow-400 text-sm">
+                {record.skipReason || "—"}
+              </span>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }

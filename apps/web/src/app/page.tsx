@@ -6,7 +6,6 @@ import CsvPreviewTable from "@/components/CsvPreviewTable";
 import ProcessingState from "@/components/ProcessingState";
 import ResultsView from "@/components/ResultsView";
 import Navbar from "@/components/Navbar";
-import SampleFiles from "@/components/SampleFiles";
 import JobCostSummary from "@/components/JobCostSummary";
 import { useUpload, useConfirm, useProcessingPoll, useRecords } from "@/lib/hooks";
 import { getExportUrl } from "@/lib/api";
@@ -17,6 +16,7 @@ type Step = "upload" | "preview" | "processing" | "results";
 export default function Home() {
   const [step, setStep] = useState<Step>("upload");
   const [uploadData, setUploadData] = useState<UploadResult | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [creditsRefreshKey, setCreditsRefreshKey] = useState(0);
 
   const { upload, uploading, error: uploadError, result, reset: resetUpload } = useUpload();
@@ -46,6 +46,7 @@ export default function Home() {
 
   const handleFileSelect = useCallback(
     async (file: File) => {
+      setSelectedFile(file);
       await upload(file);
     },
     [upload]
@@ -66,6 +67,7 @@ export default function Home() {
   const handleReset = useCallback(() => {
     setStep("upload");
     setUploadData(null);
+    setSelectedFile(null);
     resetUpload();
   }, [resetUpload]);
 
@@ -73,51 +75,14 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <Navbar step={step} onReset={handleReset} creditsRefreshKey={creditsRefreshKey} />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <div className="flex items-center justify-center gap-2">
-            {(["upload", "preview", "processing", "results"] as Step[]).map((s, i) => (
-              <div key={s} className="flex items-center">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium
-                    ${step === s
-                      ? "bg-blue-600 text-white"
-                      : i < ["upload", "preview", "processing", "results"].indexOf(step)
-                        ? "bg-green-500 text-white"
-                        : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-                    }`}
-                >
-                  {i + 1}
-                </div>
-                {i < 3 && (
-                  <div
-                    className={`w-12 h-0.5 ${
-                      i < ["upload", "preview", "processing", "results"].indexOf(step)
-                        ? "bg-green-500"
-                        : "bg-gray-200 dark:bg-gray-700"
-                    }`}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-center gap-16 mt-2">
-            <span className="text-xs text-gray-500 dark:text-gray-400">Upload</span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">Preview</span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">Process</span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">Results</span>
-          </div>
-        </div>
-
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {step === "upload" && (
-          <>
-            <FileUploader
-              onFileSelect={handleFileSelect}
-              isUploading={uploading}
-              error={uploadError}
-            />
-            <SampleFiles />
-          </>
+          <FileUploader
+            onFileSelect={handleFileSelect}
+            isUploading={uploading}
+            error={uploadError}
+            onCancel={handleReset}
+          />
         )}
 
         {step === "preview" && uploadData && (
@@ -126,6 +91,9 @@ export default function Home() {
             rows={uploadData.previewRows}
             onConfirm={handleConfirm}
             isConfirming={confirming}
+            onCancel={handleReset}
+            fileName={selectedFile?.name ?? ""}
+            fileSize={selectedFile?.size ?? 0}
           />
         )}
 
@@ -153,7 +121,7 @@ export default function Home() {
 
         {recordsLoading && (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto" />
             <p className="mt-4 text-gray-500 dark:text-gray-400">Loading results...</p>
           </div>
         )}

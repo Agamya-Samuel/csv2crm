@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Zap, Brain, ExternalLink, AlertCircle, List } from "lucide-react";
+import { ArrowLeft, Brain, ExternalLink, AlertCircle, List } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { useAiCredits } from "@/lib/hooks";
 import { formatTokens } from "@/lib/utils";
@@ -88,42 +88,51 @@ export default function Navbar({ step, onReset, creditsRefreshKey }: NavbarProps
   const { credits } = useAiCredits(creditsRefreshKey);
 
   return (
-    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
         <div className="flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <Zap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-lg bg-gray-900 dark:bg-white flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white dark:text-gray-900">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-base font-bold text-gray-900 dark:text-white leading-tight">
                 CSV2CRM
               </h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">
                 AI-Powered Lead Importer
               </p>
             </div>
           </Link>
-          <div className="flex items-center gap-3">
+
+          {/* Right side */}
+          <div className="flex items-center gap-2">
             <AiCreditBadge credits={credits} />
+
             <Link
               href="/jobs"
-              className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400
-                hover:text-gray-800 dark:hover:text-gray-200 flex items-center gap-1"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium
+                text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white
+                hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
             >
               <List className="w-4 h-4" />
               All Jobs
             </Link>
+
             {step !== "upload" && (
               <button
                 onClick={onReset}
-                className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400
-                  hover:text-gray-800 dark:hover:text-gray-200 flex items-center gap-1"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium
+                  text-white bg-orange-500 hover:bg-orange-600 transition-all duration-200 shadow-sm"
               >
                 <ArrowLeft className="w-4 h-4" />
                 New Import
               </button>
             )}
+
             <ThemeToggle />
           </div>
         </div>
