@@ -298,8 +298,7 @@ export default function JobsPage() {
             <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-900">
             <div className="overflow-x-auto">
               <table
-                className="w-full text-sm"
-                style={{ width: table.getCenterTotalSize() }}
+                className="w-full text-sm table-fixed"
               >
                 <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
                   {table.getHeaderGroups().map((headerGroup) => (
