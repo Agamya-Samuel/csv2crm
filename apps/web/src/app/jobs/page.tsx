@@ -165,6 +165,20 @@ export default function JobsPage() {
           );
         },
       }),
+      columnHelper.accessor("estimatedCost", {
+        header: "Cost",
+        size: 100,
+        minSize: 70,
+        cell: (info) => {
+          const val = info.getValue();
+          if (!val) return <span className="text-gray-400">—</span>;
+          return (
+            <span className="text-green-600 dark:text-green-400 font-medium">
+              ${val < 0.01 ? val.toFixed(4) : val.toFixed(2)}
+            </span>
+          );
+        },
+      }),
       columnHelper.accessor("createdAt", {
         header: "Created At",
         size: 180,
