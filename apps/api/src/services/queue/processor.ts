@@ -62,7 +62,7 @@ export async function processBatch(job: { data: BatchJobData }): Promise<{
   });
 
   try {
-    const extracted = await extractor.extractBatch(rows, columns);
+    const { records: extracted, usage } = await extractor.extractBatch(rows, columns);
 
     let imported = 0;
     let skipped = 0;
@@ -81,6 +81,18 @@ export async function processBatch(job: { data: BatchJobData }): Promise<{
         skipped++;
       }
     }
+
+    await prisma.aiUsage.create({
+      data: {
+        provider: process.env.AI_PROVIDER || "openrouter",
+        model: process.env.AI_MODEL || "unknown",
+        promptTokens: usage.promptTokens,
+        completionTokens: usage.completionTokens,
+        totalTokens: usage.totalTokens,
+        uploadId,
+        batchId,
+      },
+    });
 
     await prisma.batch.update({
       where: { id: batchId },
