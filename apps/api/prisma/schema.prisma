@@ -15,6 +15,7 @@ model Upload {
   createdAt DateTime     @default(now())
   records   LeadRecord[]
   batches   Batch[]
+  aiUsages  AiUsage[]
 }
 
 enum UploadStatus {
@@ -90,4 +91,20 @@ enum DataSource {
   eden_park
   varah_swamy
   sarjapur_plots
+}
+
+model AiUsage {
+  id               String   @id @default(uuid())
+  provider         String
+  model            String
+  promptTokens     Int
+  completionTokens Int
+  totalTokens      Int
+  uploadId         String?
+  batchId          String?
+  upload           Upload?  @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+
+  @@index([uploadId])
+  @@index([createdAt])
 }
