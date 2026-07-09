@@ -42,7 +42,12 @@ export class OpenAICompatibleAdapter implements AIExtractor {
         throw new AIServiceError("Invalid JSON response from AI provider");
       }
 
-      const records = Array.isArray(parsed) ? parsed : (parsed as any).records || (parsed as any).data || [];
+      const records = Array.isArray(parsed)
+        ? parsed
+        : (parsed as any).records
+          || (parsed as any).data
+          || Object.values(parsed as Record<string, unknown>).find((v) => Array.isArray(v))
+          || [];
       const validated = extractedBatchSchema.safeParse(records);
 
       if (!validated.success) {
