@@ -26,9 +26,9 @@ export const extractedRecordSchema = z.object({
   state: z.string().optional().nullable(),
   country: z.string().optional().nullable(),
   lead_owner: z.string().optional().nullable(),
-  crm_status: crmStatusSchema.optional().nullable(),
+  crm_status: z.string().optional().nullable(),
   crm_note: z.string().optional().nullable(),
-  data_source: dataSourceSchema.optional().nullable(),
+  data_source: z.string().optional().nullable(),
   possession_time: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
 });

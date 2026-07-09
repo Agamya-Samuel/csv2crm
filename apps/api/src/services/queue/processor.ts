@@ -1,5 +1,6 @@
 import { prisma } from "../../db/client";
 import { createAIExtractor } from "../ai/factory";
+import { normalizeCrmStatus, normalizeDataSource } from "../../utils/normalize";
 import type { RawRow, ExtractedRecord } from "../../types";
 
 const extractor = createAIExtractor();
@@ -42,9 +43,9 @@ function mapToLeadRecord(record: ExtractedRecord, rawRow: RawRow, uploadId: stri
     state: record.state || null,
     country: record.country || null,
     leadOwner: record.lead_owner || null,
-    crmStatus: (record.crm_status || null) as any,
+    crmStatus: normalizeCrmStatus(record.crm_status) as any,
     crmNote: record.crm_note || null,
-    dataSource: (record.data_source || null) as any,
+    dataSource: normalizeDataSource(record.data_source) as any,
     possessionTime: record.possession_time || null,
     description: record.description || null,
   };
